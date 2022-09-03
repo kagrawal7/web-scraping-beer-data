@@ -1,5 +1,5 @@
 from urllib.request import Request, urlopen
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup, NavigableString, Tag
 import re
 import credentials
 import requests
@@ -87,39 +87,37 @@ def each_beer_main(html_soup: BeautifulSoup, user_dict: dict) -> None:
 #     return BeautifulSoup(html, 'html.parser')
 
 
+def login_get_soup(login_link: str, creds: dict, beer_url: str) -> BeautifulSoup:
+    """Login with credentials in payload and
+    return BeautifulSoup of beer page"""
+    with requests.session() as s:
+        s.post(login_link, data=creds)
+        r = s.get(beer_url)
+        return BeautifulSoup(r.content, 'html.parser')
+
+
 if __name__ == '__main__':
     # run web scraper
-    # some sort of for loop to go through every single beer page and get
-    # the url of the page
+    site = "http://beeradvocate.com"
     login_url = "https://www.beeradvocate.com/community/login/login"
     payload = {'login': credentials.username,
                'password': credentials.password}
+    data_set = {}
+
     url = "https://www.beeradvocate.com/beer/profile/1199/611752/"
+    soup = login_get_soup(login_url, payload, url)
+    each_beer_main(soup, data_set)
 
-    with requests.session() as s:
-        s.post(login_url, data=payload)
-        data_set = {}
-        r = s.get(url)
-        soup = BeautifulSoup(r.content, 'html.parser')
-        each_beer_main(soup, data_set)
-        # print(data_set)
-        # print(len(data_set))
-        # ba_content_tag = soup.find('div', {'id': 'ba-content'})
-        # descendants = ba_content_tag.descendants
-        # i = 0
-        # for x in descendants:
-        #     i += 1
-        # print(i)
+    multiple_pages_tag = soup.find('span', {'style': 'font-weight:bold;'})
+    each_beer_main(soup, data_set)
+    if multiple_pages_tag is not None:
+        j = 0
+        for des in multiple_pages_tag.children:
+            j += 1
+            if j >= 5 and isinstance(des, Tag) and des.string not in ['next', 'last']:
+                each_beer_main(login_get_soup(login_url, payload, site + des['href']), data_set)
 
-        multiple_pages_tag = soup.find('span', {'style': 'font-weight:bold;'})
-        print(soup)
+    print(data_set)
 
 
-        # if multiple_pages_tag is not None:
-        #     # multiple pages
-        #     print("\n")
-        #
-        #     # each_beer_main(soup, data_set)
-        # else:
-        #     each_beer_main(soup, data_set)
 
