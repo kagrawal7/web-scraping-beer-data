@@ -90,7 +90,7 @@ def login() -> None:
     login_url = "https://www.beeradvocate.com/community/login/"
     payload = {'username': credentials.username,
                'password': credentials.password}
-    
+
 
     return
 
