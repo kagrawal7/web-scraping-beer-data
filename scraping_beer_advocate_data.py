@@ -2,6 +2,7 @@ from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup, NavigableString
 import re
 import credentials
+import requests
 # We want to create a dictionary mapping reviewers to a list of beers they
 # have left reviews for from the beer advocacy site
 
@@ -31,13 +32,6 @@ def extract_rating(html_soup: BeautifulSoup) -> float:
             else:
                 return float(str(des))
         i += 1
-
-
-def get_soup(beer_url: str) -> BeautifulSoup:
-    """ Given link for beer, extract the html soup"""
-    beer_url_request = Request(url=beer_url, headers={'User-Agent': 'Mozilla/5.0'})
-    html = urlopen(beer_url_request)
-    return BeautifulSoup(html)
 
 
 def scrape_reviews_info(
@@ -86,40 +80,46 @@ def each_beer_main(html_soup: BeautifulSoup, user_dict: dict) -> None:
     scrape_reviews_info(html_soup, beer_name, user_dict)
 
 
-def login() -> None:
-    login_url = "https://www.beeradvocate.com/community/login/"
-    payload = {'username': credentials.username,
-               'password': credentials.password}
-
-
-    return
+# def get_soup(beer_url: str) -> BeautifulSoup:
+#     """ Given link for beer, extract the html soup"""
+#     beer_url_request = Request(url=beer_url, headers={'User-Agent': 'Mozilla/5.0'})
+#     html = urlopen(beer_url_request)
+#     return BeautifulSoup(html, 'html.parser')
 
 
 if __name__ == '__main__':
     # run web scraper
     # some sort of for loop to go through every single beer page and get
     # the url of the page
-    login()
-    data_set = {}
+    login_url = "https://www.beeradvocate.com/community/login/login"
+    payload = {'login': credentials.username,
+               'password': credentials.password}
     url = "https://www.beeradvocate.com/beer/profile/1199/611752/"
-    soup = get_soup(url)
-    each_beer_main(soup, data_set)
-    # print(data_set)
-    # print(len(data_set))
-    # ba_content_tag = soup.find('div', {'id': 'ba-content'})
-    # descendants = ba_content_tag.descendants
-    # i = 0
-    # for x in descendants:
-    #     i += 1
-    # print(i)
 
-    multiple_pages_tag = soup.find('span', {'style': 'font-weight:bold;'})
-    print(soup)
-    # if multiple_pages_tag is not None:
-    #     # multiple pages
-    #     print("\n")
-    #
-    #     # each_beer_main(soup, data_set)
-    # else:
-    #     each_beer_main(soup, data_set)
+    with requests.session() as s:
+        s.post(login_url, data=payload)
+        data_set = {}
+        r = s.get(url)
+        soup = BeautifulSoup(r.content, 'html.parser')
+        each_beer_main(soup, data_set)
+        # print(data_set)
+        # print(len(data_set))
+        # ba_content_tag = soup.find('div', {'id': 'ba-content'})
+        # descendants = ba_content_tag.descendants
+        # i = 0
+        # for x in descendants:
+        #     i += 1
+        # print(i)
+
+        multiple_pages_tag = soup.find('span', {'style': 'font-weight:bold;'})
+        print(soup)
+
+
+        # if multiple_pages_tag is not None:
+        #     # multiple pages
+        #     print("\n")
+        #
+        #     # each_beer_main(soup, data_set)
+        # else:
+        #     each_beer_main(soup, data_set)
 
