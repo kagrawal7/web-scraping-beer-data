@@ -74,10 +74,27 @@ def scrape_reviews_info(
             user_dict[name][beer_name] = score
 
 
-def each_beer_main(html_soup: BeautifulSoup, user_dict: dict) -> None:
-    """ The main function for getting reviews for each beer"""
+def each_beer_main_helper(html_soup: BeautifulSoup, user_dict: dict) -> None:
+    """Helper for each_beer_main"""
     beer_name = extract_beer_name(html_soup)
     scrape_reviews_info(html_soup, beer_name, user_dict)
+
+
+def each_beer_main(website: str, user_dict: dict, login_link: str,
+                   creds: dict, beer_url: str) -> None:
+    """ The main function for getting reviews for each beer"""
+    html_soup = login_get_soup(login_link, creds, beer_url)
+
+    multiple_pages_tag = html_soup.find('span', {'style': 'font-weight:bold;'})
+    each_beer_main_helper(html_soup, user_dict)
+    if multiple_pages_tag is not None:
+        j = 0
+        for des in multiple_pages_tag.children:
+            j += 1
+            if j >= 5 and isinstance(des, Tag) and \
+                    des.string not in ['next', 'last']:
+                each_beer_main_helper(login_get_soup(login_link, creds,
+                                              website + des['href']), user_dict)
 
 
 # def get_soup(beer_url: str) -> BeautifulSoup:
@@ -87,7 +104,8 @@ def each_beer_main(html_soup: BeautifulSoup, user_dict: dict) -> None:
 #     return BeautifulSoup(html, 'html.parser')
 
 
-def login_get_soup(login_link: str, creds: dict, beer_url: str) -> BeautifulSoup:
+def login_get_soup(login_link: str, creds: dict, beer_url: str) \
+        -> BeautifulSoup:
     """Login with credentials in payload and
     return BeautifulSoup of beer page"""
     with requests.session() as s:
@@ -104,18 +122,9 @@ if __name__ == '__main__':
                'password': credentials.password}
     data_set = {}
 
+    # run for loop over all beers
     url = "https://www.beeradvocate.com/beer/profile/1199/611752/"
-    soup = login_get_soup(login_url, payload, url)
-    each_beer_main(soup, data_set)
-
-    multiple_pages_tag = soup.find('span', {'style': 'font-weight:bold;'})
-    each_beer_main(soup, data_set)
-    if multiple_pages_tag is not None:
-        j = 0
-        for des in multiple_pages_tag.children:
-            j += 1
-            if j >= 5 and isinstance(des, Tag) and des.string not in ['next', 'last']:
-                each_beer_main(login_get_soup(login_url, payload, site + des['href']), data_set)
+    each_beer_main(site, data_set, login_url, payload, url)
 
     print(data_set)
 
