@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 import re
 import credentials
 import requests
+import pandas as pd
 # We want to create a dictionary mapping reviewers to a list of beers they
 # have left reviews for from the beer advocacy site
 
@@ -123,10 +124,14 @@ if __name__ == '__main__':
     data_set = {}
 
     # run for loop over all beers
+    beer_styles_link = "https://www.beeradvocate.com/beer/styles/"
+
+
+
     url = "https://www.beeradvocate.com/beer/profile/1199/611752/"
     each_beer_main(site, data_set, login_url, payload, url)
-
     print(data_set)
 
 
-
+    # df = pd.DataFrame(data_set).transpose()
+    # df.to_csv("/Users/macbook/Desktop/Kush Independent Projects/Web Scraping Beer Data/web-scraping-beer-data/user_data.csv")
