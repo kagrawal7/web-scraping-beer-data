@@ -78,6 +78,7 @@ def scrape_reviews_info(
 def each_beer_main_helper(html_soup: BeautifulSoup, user_dict: dict) -> None:
     """Helper for each_beer_main"""
     beer_name = extract_beer_name(html_soup)
+    print(beer_name)
     scrape_reviews_info(html_soup, beer_name, user_dict)
 
 
@@ -88,30 +89,63 @@ def each_beer_main(website: str, user_dict: dict, login_link: str,
 
     multiple_pages_tag = html_soup.find('span', {'style': 'font-weight:bold;'})
     each_beer_main_helper(html_soup, user_dict)
+
     if multiple_pages_tag is not None:
         j = 0
         for des in multiple_pages_tag.children:
             j += 1
             if j >= 5 and isinstance(des, Tag) and \
                     des.string not in ['next', 'last']:
-                each_beer_main_helper(login_get_soup(login_link, creds,
-                                              website + des['href']), user_dict)
+                each_beer_main_helper(login_get_soup(
+                    login_link, creds, website + des['href']), user_dict)
 
 
-# def get_soup(beer_url: str) -> BeautifulSoup:
+def each_style_main_helper(website: str, user_dict: dict, login_link: str,
+                   creds: dict, style_soup: BeautifulSoup) -> None:
+    """Helper for each_style_main"""
+    td_tags = style_soup.find_all('td',
+                                  {'valign': 'top', 'class': 'hr_bottom_light'})
+    for td_tag in td_tags:
+        beer_tag = td_tag.find('a')
+        if beer_tag is not None:
+            each_beer_main(website, user_dict, login_link, creds,
+                           website + beer_tag['href'])
+
+
+def each_style_main(website: str, user_dict: dict, login_link: str,
+                   creds: dict, style_link: str) -> None:
+    """Main function for each style
+    Scrape info from each beer, check for more sub-pages for same style
+    """
+    style_soup = login_get_soup(login_link, creds, style_link)
+    # scrape main style page and then check for more for each style
+    each_style_main_helper(website, user_dict, login_link, creds, style_soup)
+    multiple_pages_tag = style_soup.find('span', {'style': 'font-weight:bold;'})
+    if multiple_pages_tag is not None:
+        j = 0
+        for des in multiple_pages_tag.children:
+            j += 1
+            if j >= 5 and isinstance(des, Tag) and \
+                    des.string not in ['next', 'last']:
+                each_style_main_helper(website, user_dict, login_link, creds,
+                                       login_get_soup(login_link, creds,
+                                                      website + des['href']))
+
+
+        # def get_soup(beer_url: str) -> BeautifulSoup:
 #     """ Given link for beer, extract the html soup"""
 #     beer_url_request = Request(url=beer_url, headers={'User-Agent': 'Mozilla/5.0'})
 #     html = urlopen(beer_url_request)
 #     return BeautifulSoup(html, 'html.parser')
 
 
-def login_get_soup(login_link: str, creds: dict, beer_url: str) \
+def login_get_soup(login_link: str, creds: dict, page_url: str) \
         -> BeautifulSoup:
     """Login with credentials in payload and
-    return BeautifulSoup of beer page"""
+    return BeautifulSoup of page"""
     with requests.session() as s:
         s.post(login_link, data=creds)
-        r = s.get(beer_url)
+        r = s.get(page_url)
         return BeautifulSoup(r.content, 'html.parser')
 
 
@@ -125,13 +159,25 @@ if __name__ == '__main__':
 
     # run for loop over all beers
     beer_styles_link = "https://www.beeradvocate.com/beer/styles/"
+    styles_soup = login_get_soup(login_url, payload, beer_styles_link)
+    style_tags = styles_soup.find_all('div', {'class': 'stylebreak'})
+    for style_tag in style_tags:
+        a_tags = style_tag.find_all('a')
+        for a_tag in a_tags:
+            style_url = site + a_tag['href']
+            each_style_main(site, data_set, login_url, payload, style_url)
+            # style_soup = login_get_soup(login_url, payload, style_url)
+            # # scrape main style page adn then check for more for each style
+            # td_tags = style_soup.find_all('td', {'valign': 'top', 'class': 'hr_bottom_light'})
+            # for td_tag in td_tags:
+            #     beer_tag = td_tag.find('a')
+            #     if beer_tag is not None:
+            #         each_beer_main(site, data_set, login_url, payload, site + beer_tag['href'])
+            break
+        break
+
+    # print(data_set)
 
 
-
-    url = "https://www.beeradvocate.com/beer/profile/1199/611752/"
-    each_beer_main(site, data_set, login_url, payload, url)
-    print(data_set)
-
-
-    # df = pd.DataFrame(data_set).transpose()
-    # df.to_csv("/Users/macbook/Desktop/Kush Independent Projects/Web Scraping Beer Data/web-scraping-beer-data/user_data.csv")
+    df = pd.DataFrame(data_set).transpose()
+    df.to_csv("/Users/macbook/Desktop/Kush Independent Projects/Web Scraping Beer Data/web-scraping-beer-data/user_data.csv")
