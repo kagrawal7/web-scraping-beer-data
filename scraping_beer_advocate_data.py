@@ -75,6 +75,7 @@ def scrape_reviews_info(
 def each_beer_main_helper(html_soup: BeautifulSoup, user_dict: dict) -> None:
     """Helper for each_beer_main"""
     beer_name = extract_beer_name(html_soup)
+    print(beer_name)
     scrape_reviews_info(html_soup, beer_name, user_dict)
 
 
