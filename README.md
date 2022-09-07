@@ -7,3 +7,6 @@ I had never learned web scraping before, so I learned along the way. I first tri
 
 UPDATE 1:
 The LCBO site's html code was broken but luckily I discovered a site called beeradvocate.com, which stores reviews for thousands of different beers. I completed the code to scrape all beers and all reviews but realized this would take wayyy too long (we're talking days)! Currently in the process of figuring out ways to optimize this. Even if I were to scrape considerably less reviews and beers it would still take tens of hours. 
+
+UPDATE 2:
+I will be using parallelism and multithreading to speed up the process. Since I am not sure which approach will be better, I will implement both and see which works better on a subset of the beers.
