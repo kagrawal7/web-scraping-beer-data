@@ -3,6 +3,7 @@ import re
 import credentials
 import requests
 import pandas as pd
+import time
 
 
 def extract_beer_name(html_soup) -> str:
@@ -72,20 +73,20 @@ def scrape_reviews_info(
             user_dict[name][beer_name] = score
 
 
-def each_beer_main_helper(html_soup: BeautifulSoup, user_dict: dict) -> None:
-    """Helper for each_beer_main"""
+def beer_main_helper(html_soup: BeautifulSoup, user_dict: dict) -> None:
+    """Helper for beer_main"""
     beer_name = extract_beer_name(html_soup)
     print(beer_name)
     scrape_reviews_info(html_soup, beer_name, user_dict)
 
 
-def each_beer_main(website: str, user_dict: dict, login_link: str,
+def beer_main(website: str, user_dict: dict, login_link: str,
                    creds: dict, beer_url: str) -> None:
     """ The main function for getting reviews for each beer"""
-    html_soup = login_get_soup(login_link, creds, beer_url, True)
+    html_soup = BeautifulSoup(s.get(beer_url).content, 'html.parser')
 
     multiple_pages_tag = html_soup.find('span', {'style': 'font-weight:bold;'})
-    each_beer_main_helper(html_soup, user_dict)
+    beer_main_helper(html_soup, user_dict)
 
     if multiple_pages_tag is not None:
         j = 0
@@ -93,30 +94,29 @@ def each_beer_main(website: str, user_dict: dict, login_link: str,
             j += 1
             if j >= 5 and isinstance(des, Tag) and \
                     des.string not in ['next', 'last']:
-                each_beer_main_helper(login_get_soup(
-                    login_link, creds, website + des['href'], True), user_dict)
+                beer_main_helper(BeautifulSoup(s.get(website + des['href']).content, 'html.parser'), user_dict)
 
 
-def each_style_main_helper(website: str, user_dict: dict, login_link: str,
+def substyle_main_helper(website: str, user_dict: dict, login_link: str,
                    creds: dict, style_soup: BeautifulSoup) -> None:
-    """Helper for each_style_main"""
+    """Helper for substyle_main"""
     td_tags = style_soup.find_all('td',
                                   {'valign': 'top', 'class': 'hr_bottom_light'})
     for td_tag in td_tags:
         beer_tag = td_tag.find('a')
         if beer_tag is not None:
-            each_beer_main(website, user_dict, login_link, creds,
+            beer_main(website, user_dict, login_link, creds,
                            website + beer_tag['href'])
 
 
-def each_style_main(website: str, user_dict: dict, login_link: str,
-                   creds: dict, style_link: str) -> None:
+def substyle_main(website: str, user_dict: dict, login_link: str,
+                       creds: dict, style_link: str) -> None:
     """Main function for each style
     Scrape info from each beer, check for more sub-pages for same style
     """
-    style_soup = login_get_soup(login_link, creds, style_link, False)
+    style_soup = BeautifulSoup(s.get(style_link).content, 'html.parser')
     # scrape main style page and then check for more for each style
-    each_style_main_helper(website, user_dict, login_link, creds, style_soup)
+    substyle_main_helper(website, user_dict, login_link, creds, style_soup)
     # multiple_pages_tag = style_soup.find('span', {'style': 'font-weight:bold;'})
     # if multiple_pages_tag is not None:
     #     j = 0
@@ -124,42 +124,38 @@ def each_style_main(website: str, user_dict: dict, login_link: str,
     #         j += 1
     #         if j == 5 and isinstance(des, Tag) and \
     #                 des.string not in ['next', 'last']:
-    #             each_style_main_helper(website, user_dict, login_link, creds,
-    #                                    login_get_soup(login_link, creds,
-    #                                                   website + des['href'],
-    #                                                   False))
-
-
-def login_get_soup(login_link: str, creds: dict, page_url: str, log_in: bool) \
-        -> BeautifulSoup:
-    """Login with credentials in payload and
-    return BeautifulSoup of page"""
-    with requests.session() as s:
-        if log_in:
-            s.post(login_link, data=creds)
-        r = s.get(page_url)
-        return BeautifulSoup(r.content, 'html.parser')
+    #             substyle_main_helper(website, user_dict, login_link, creds,
+    #                                    BeautifulSoup(s.get(website + des['href']).content, 'html.parser'))
 
 
 if __name__ == '__main__':
+    start = time.time()
     # run web scraper
     site = "http://beeradvocate.com"
     login_url = "https://www.beeradvocate.com/community/login/login"
-    payload = {'login': credentials.username,
+    login_info = {'login': credentials.username,
                'password': credentials.password}
     data_set = {}
 
     # get soup for page with all styles
-    beer_styles_link = "https://www.beeradvocate.com/beer/styles/"
-    styles_soup = login_get_soup(login_url, payload, beer_styles_link, False)
-    style_tags = styles_soup.find_all('div', {'class': 'stylebreak'})
-    for style_tag in style_tags:
-        a_tags = style_tag.find_all('a')
-        for a_tag in a_tags:
-            style_url = site + a_tag['href']
-            # run main function for each sub-style
-            each_style_main(site, data_set, login_url, payload, style_url)
+    with requests.session() as s:
+        s.post(login_url, data=login_info)
+        beer_styles_link = "https://www.beeradvocate.com/beer/styles/"
+        styles_soup = BeautifulSoup(s.get(beer_styles_link).content, 'html.parser')
+        style_tags = styles_soup.find_all('div', {'class': 'stylebreak'})
+        for style_tag in style_tags:
+            a_tags = style_tag.find_all('a')
+            for a_tag in a_tags:
+                style_url = site + a_tag['href']
+                # run main function for each sub-style
+                substyle_main(site, data_set, login_url, login_info, style_url)
+                break
+            break
 
-    df = pd.DataFrame(data_set).transpose()
-    df.to_csv("/Users/macbook/Desktop/Kush Independent Projects/"
-              "Web Scraping Beer Data/web-scraping-beer-data/user_data.csv")
+        df = pd.DataFrame(data_set).transpose()
+        df.to_csv("/Users/macbook/Desktop/Kush Independent Projects/"
+                  "web-scraping-beer-data/user_data_a.csv")
+
+    end = time.time()
+    print(end-start)
+    print((end-start)/60)
