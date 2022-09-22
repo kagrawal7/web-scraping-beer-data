@@ -80,8 +80,7 @@ def beer_main_helper(html_soup: BeautifulSoup, user_dict: dict) -> None:
     scrape_reviews_info(html_soup, beer_name, user_dict)
 
 
-def beer_main(website: str, user_dict: dict, login_link: str,
-                   creds: dict, beer_url: str) -> None:
+def beer_main(website: str, user_dict: dict, beer_url: str) -> None:
     """ The main function for getting reviews for each beer"""
     html_soup = BeautifulSoup(s.get(beer_url).content, 'html.parser')
 
@@ -97,26 +96,23 @@ def beer_main(website: str, user_dict: dict, login_link: str,
                 beer_main_helper(BeautifulSoup(s.get(website + des['href']).content, 'html.parser'), user_dict)
 
 
-def substyle_main_helper(website: str, user_dict: dict, login_link: str,
-                   creds: dict, style_soup: BeautifulSoup) -> None:
+def substyle_main_helper(website: str, user_dict: dict, style_soup: BeautifulSoup) -> None:
     """Helper for substyle_main"""
     td_tags = style_soup.find_all('td',
                                   {'valign': 'top', 'class': 'hr_bottom_light'})
     for td_tag in td_tags:
         beer_tag = td_tag.find('a')
         if beer_tag is not None:
-            beer_main(website, user_dict, login_link, creds,
-                           website + beer_tag['href'])
+            beer_main(website, user_dict, website + beer_tag['href'])
 
 
-def substyle_main(website: str, user_dict: dict, login_link: str,
-                       creds: dict, style_link: str) -> None:
+def substyle_main(website: str, user_dict: dict, style_link: str) -> None:
     """Main function for each style
     Scrape info from each beer, check for more sub-pages for same style
     """
     style_soup = BeautifulSoup(s.get(style_link).content, 'html.parser')
     # scrape main style page and then check for more for each style
-    substyle_main_helper(website, user_dict, login_link, creds, style_soup)
+    substyle_main_helper(website, user_dict, style_soup)
     # multiple_pages_tag = style_soup.find('span', {'style': 'font-weight:bold;'})
     # if multiple_pages_tag is not None:
     #     j = 0
@@ -124,8 +120,7 @@ def substyle_main(website: str, user_dict: dict, login_link: str,
     #         j += 1
     #         if j == 5 and isinstance(des, Tag) and \
     #                 des.string not in ['next', 'last']:
-    #             substyle_main_helper(website, user_dict, login_link, creds,
-    #                                    BeautifulSoup(s.get(website + des['href']).content, 'html.parser'))
+    #             substyle_main_helper(website, user_dict, BeautifulSoup(s.get(website + des['href']).content, 'html.parser'))
 
 
 if __name__ == '__main__':
@@ -148,7 +143,7 @@ if __name__ == '__main__':
             for a_tag in a_tags:
                 style_url = site + a_tag['href']
                 # run main function for each sub-style
-                substyle_main(site, data_set, login_url, login_info, style_url)
+                substyle_main(site, data_set, style_url)
                 break
             break
 
