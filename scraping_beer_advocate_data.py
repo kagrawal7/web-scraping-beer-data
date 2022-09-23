@@ -4,6 +4,8 @@ import credentials
 import requests
 import pandas as pd
 import time
+import functools
+import concurrent.futures
 
 
 def extract_beer_name(html_soup) -> str:
@@ -100,10 +102,19 @@ def substyle_main_helper(website: str, user_dict: dict, style_soup: BeautifulSou
     """Helper for substyle_main"""
     td_tags = style_soup.find_all('td',
                                   {'valign': 'top', 'class': 'hr_bottom_light'})
-    for td_tag in td_tags:
-        beer_tag = td_tag.find('a')
-        if beer_tag is not None:
-            beer_main(website, user_dict, website + beer_tag['href'])
+    # for td_tag in td_tags:
+    #     beer_tag = td_tag.find('a')
+    #     if beer_tag is not None:
+    #         beer_main(website, user_dict, website + beer_tag['href'])
+    partial_beer_main_caller = functools.partial(beer_main_caller, website, user_dict)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        executor.map(partial_beer_main_caller, td_tags)
+
+
+def beer_main_caller(website, user_dict, td_tag):
+    beer_tag = td_tag.find('a')
+    if beer_tag is not None:
+        beer_main(website, user_dict, website + beer_tag['href'])
 
 
 def substyle_main(website: str, user_dict: dict, style_link: str) -> None:
