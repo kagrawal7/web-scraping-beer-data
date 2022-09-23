@@ -90,12 +90,18 @@ def beer_main(website: str, user_dict: dict, beer_url: str) -> None:
     beer_main_helper(html_soup, user_dict)
 
     if multiple_pages_tag is not None:
-        j = 0
-        for des in multiple_pages_tag.children:
-            j += 1
-            if j >= 5 and isinstance(des, Tag) and \
-                    des.string not in ['next', 'last']:
-                beer_main_helper(BeautifulSoup(s.get(website + des['href']).content, 'html.parser'), user_dict)
+        children = list(multiple_pages_tag.children)[4:]
+        partial_beer_main_helper_caller = functools.partial(
+            beer_main_helper_caller, website, user_dict)
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(partial_beer_main_helper_caller, children)
+
+
+def beer_main_helper_caller(website, user_dict, child):
+    if isinstance(child, Tag) and \
+            child.string not in ['next', 'last']:
+        beer_main_helper(BeautifulSoup(
+            s.get(website + child['href']).content, 'html.parser'), user_dict)
 
 
 def substyle_main_helper(website: str, user_dict: dict, style_soup: BeautifulSoup) -> None:
