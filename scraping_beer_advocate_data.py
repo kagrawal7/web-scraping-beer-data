@@ -138,14 +138,18 @@ if __name__ == '__main__':
         beer_styles_link = "https://www.beeradvocate.com/beer/styles/"
         styles_soup = BeautifulSoup(s.get(beer_styles_link).content, 'html.parser')
         style_tags = styles_soup.find_all('div', {'class': 'stylebreak'})
+
+        ### remove this line
+        testing_index = 0
         for style_tag in style_tags:
+            testing_index += 1
             a_tags = style_tag.find_all('a')
             for a_tag in a_tags:
                 style_url = site + a_tag['href']
                 # run main function for each sub-style
                 substyle_main(site, data_set, style_url)
+            if testing_index == 2:
                 break
-            break
 
         df = pd.DataFrame(data_set).transpose()
         df.to_csv("/Users/macbook/Desktop/Kush Independent Projects/"
