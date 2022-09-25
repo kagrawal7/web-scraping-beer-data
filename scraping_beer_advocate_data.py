@@ -152,7 +152,7 @@ if __name__ == '__main__':
                 break
 
         df = pd.DataFrame(data_set).transpose()
-        df.to_csv("/Users/macbook/Desktop/Kush Independent Projects/"
+        df.to_csv("/Users/macbook/Desktop/Kush_Independent_Projects/"
                   "web-scraping-beer-data/user_data_a.csv")
 
     end = time.time()
