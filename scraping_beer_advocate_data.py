@@ -123,10 +123,11 @@ def beer_main_caller(website, user_dict, td_tag):
         beer_main(website, user_dict, website + beer_tag['href'])
 
 
-def substyle_main(website: str, user_dict: dict, style_link: str) -> None:
+def substyle_main(website: str, user_dict: dict, a_tag: Tag) -> None:
     """Main function for each style
     Scrape info from each beer, check for more sub-pages for same style
     """
+    style_link = website + a_tag['href']
     style_soup = BeautifulSoup(s.get(style_link).content, 'html.parser')
     # scrape main style page and then check for more for each style
     substyle_main_helper(website, user_dict, style_soup)
@@ -161,15 +162,18 @@ if __name__ == '__main__':
         for style_tag in style_tags:
             testing_index += 1
             a_tags = style_tag.find_all('a')
-            for a_tag in a_tags:
-                style_url = site + a_tag['href']
-                # run main function for each sub-style
-                substyle_main(site, data_set, style_url)
+
+            # run main function for each sub-style
+            partial_substyle_main = functools.partial(
+                substyle_main, site, data_set)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                executor.map(partial_substyle_main, a_tags)
+
             if testing_index == 2:
                 break
 
         df = pd.DataFrame(data_set).transpose()
-        df.to_csv("/Users/macbook/Desktop/Kush Independent Projects/"
+        df.to_csv("/Users/macbook/Desktop/Kush_Independent_Projects/"
                   "web-scraping-beer-data/user_data_a.csv")
 
     end = time.time()
