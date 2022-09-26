@@ -91,7 +91,7 @@ def beer_main(website: str, user_dict: dict, beer_url: str) -> None:
     if multiple_pages_tag is not None:
         children = list(multiple_pages_tag.children)[4:]
         next_tag = children[-3]
-        if isinstance(next_tag, Tag):
+        if isinstance(next_tag, Tag) and isinstance(children[-1], Tag):
             beer_main(website, user_dict, website + next_tag['href'])
 
         # partial_beer_main_helper_caller = functools.partial(
