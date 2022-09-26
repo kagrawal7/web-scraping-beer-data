@@ -1,9 +1,18 @@
 # web-scraping-beer-data
 
-This project is a "helper project" for the Beer Recommendation Project. It is fairly straightforward; 
- I scrape data from LCBO and attempt to create a data set mapping a list of random people to the beers they like and/or dislike. I will then use this data set for the Beer Recommendation Project.
+This project is a "helper project" for the Beer Recommendation Project. It is fairly straightforward:
 
-I had never learned web scraping before, so I learned along the way. I first tried using BeautifulSoup, but realized it was incorrectly reading the html code on LCBO's website so decided to switch to something else (TBD).
+There is a website called BeerAdvocate that has thousands of reviews and ratings for thousands of different beers. Problem is, to access all beer pages you have to go to a page with links to different beer styles and each link with different beer styles have different beers, and each beer page only has a limited number of reviews and a link to a page with more reviews.
+
+I scrape data from BeerAdvocate and attempt to create a data set mapping a list of random people to the beers they like and/or dislike. I will then use this data set for the Beer Recommendation Project.
+
+I was first trying to get this data from the LCBO website but as it turns out their data was extremely disorganized and their HTML was unreadable by BeautifulSoup, and then I happily stumbled onto BeerAdvocate.
+
+UPDATE 5:
+The csv file takes up 350 MB! The maximum file size on github is 100 MB. Will have to store csv file somewhere else, like google drive
+
+UPDATE 4:
+Finally done!I Got each review for top 50 beers for each sub-style of beer. In total, more than 19,000 pages with reviews were scraped, taking about 23246 seconds or 387 minutes to run. I had to get rid of multithreading code for each beer's subpages because of the layout of the page; only a few beer subpages are available at any one page and you need the "next" tag to go to the next one, so instead I had to use a naive for loop. 
 
 UPDATE 3:
 Added some multithreading code for each beer's main page in concurrent_scraper branch (scraping up to 120 reviews for 500 beers across 2 styles takes about 158 seconds). Added more multithreading code for each beer's subpages as well (scraping up to 120 reviews for 500 beers across 2 styles takes about 148 seconds)
