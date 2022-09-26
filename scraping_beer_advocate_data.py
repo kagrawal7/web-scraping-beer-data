@@ -35,51 +35,50 @@ def extract_rating(html_soup: BeautifulSoup) -> float:
         i += 1
 
 
-def scrape_reviews_info(
-        html_soup: BeautifulSoup, beer_name: str, user_dict: dict) -> None:
+def scrape_review_info(beer_name: str, user_dict: dict, review: Tag) -> None:
     """ Go through each review, get relevant info and add to user_dict
     """
-    reviews = html_soup.find_all('div', {'id': 'rating_fullview_content_2'})
 
-    for review in reviews:
-        reviewer_link = review.find('a', {'class': 'username'})['href']
-        name = re.split(r"/|\.", reviewer_link)[3]
+    reviewer_link = review.find('a', {'class': 'username'})['href']
+    name = re.split(r"/|\.", reviewer_link)[3]
 
-        # Have to add an if statement for whether or not reviewer left a
-        # review or only left a rating
-        span_tag = review.find('span', {'class': 'muted'})
-        span_tag_string = []
-        for des in span_tag.descendants:
-            span_tag_string.append(des)
-            break
+    # Have to add an if statement for whether or not reviewer left a
+    # review or only left a rating
+    span_tag = review.find('span', {'class': 'muted'})
+    span_tag_string = []
+    for des in span_tag.descendants:
+        span_tag_string.append(des)
+        break
 
-        rev_or_rate = re.split(r" |:", span_tag_string[0])[0]
+    rev_or_rate = re.split(r" |:", span_tag_string[0])[0]
 
-        if rev_or_rate == 'Reviewed':
-            score = float(review.find('span', {'class': 'BAscore_norm'}).string)
-        elif rev_or_rate == 'Rated':
-            returned_val = extract_rating(span_tag)
-            if returned_val < 0:
-                # some error occurred AKA incorrect html code,
-                # so we ignore this review
-                continue
-            else:
-                score = returned_val
-        else:
-            continue
+    if rev_or_rate == 'Reviewed':
+        score = float(review.find('span', {'class': 'BAscore_norm'}).string)
+    elif rev_or_rate == 'Rated':
+        returned_val = extract_rating(span_tag)
+        if returned_val >= 0:
+            score = returned_val
+            # if returned_val < 0,
+            # some error occurred AKA incorrect html code,
+            # so we ignore this review
 
-        # add relevant info to user_dict
-        if name not in user_dict:
-            user_dict[name] = {beer_name: score}
-        else:
-            user_dict[name][beer_name] = score
+    # add relevant info to user_dict
+    if name not in user_dict:
+        user_dict[name] = {beer_name: score}
+    else:
+        user_dict[name][beer_name] = score
 
 
 def beer_main_helper(html_soup: BeautifulSoup, user_dict: dict) -> None:
     """Helper for beer_main"""
     beer_name = extract_beer_name(html_soup)
     print(beer_name)
-    scrape_reviews_info(html_soup, beer_name, user_dict)
+    reviews = html_soup.find_all('div', {'id': 'rating_fullview_content_2'})
+    partial_scrape_review_info = functools.partial(
+        scrape_review_info, beer_name, user_dict)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        executor.map(partial_scrape_review_info, reviews)
+    # scrape_review_info(html_soup, beer_name, user_dict)
 
 
 def beer_main(website: str, user_dict: dict, beer_url: str) -> None:
@@ -95,6 +94,16 @@ def beer_main(website: str, user_dict: dict, beer_url: str) -> None:
             beer_main_helper_caller, website, user_dict)
         with concurrent.futures.ThreadPoolExecutor() as executor:
             executor.map(partial_beer_main_helper_caller, children)
+
+        # get next tag, call beer_main again!
+        # next_tag = children[-3]
+        # if isinstance(next_tag, Tag):
+        # test three approaches on a subset:
+        # approach one: for loop over all "next"s
+        # approach two: with redundancy, use next to recursively call
+        # beer_main
+        # approach three, for loop over all "next"s simply to get urls,
+        # then use threadpool executor
 
 
 def beer_main_helper_caller(website, user_dict, child):
@@ -157,10 +166,7 @@ if __name__ == '__main__':
         styles_soup = BeautifulSoup(s.get(beer_styles_link).content, 'html.parser')
         style_tags = styles_soup.find_all('div', {'class': 'stylebreak'})
 
-        ### remove this line
-        testing_index = 0
         for style_tag in style_tags:
-            testing_index += 1
             a_tags = style_tag.find_all('a')
 
             # run main function for each sub-style
@@ -168,9 +174,6 @@ if __name__ == '__main__':
                 substyle_main, site, data_set)
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 executor.map(partial_substyle_main, a_tags)
-
-            if testing_index == 2:
-                break
 
         df = pd.DataFrame(data_set).transpose()
         df.to_csv("/Users/macbook/Desktop/Kush_Independent_Projects/"
