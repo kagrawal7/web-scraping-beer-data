@@ -9,7 +9,7 @@ I scrape data from BeerAdvocate and attempt to create a data set mapping a list 
 I was first trying to get this data from the LCBO website but as it turns out their data was extremely disorganized and their HTML was unreadable by BeautifulSoup, and then I happily stumbled onto BeerAdvocate.
 
 UPDATE 5:
-The csv file takes up 350 MB! The maximum file size on github is 100 MB. Will have to use git LFS
+The csv file takes up 350 MB! The maximum file size on github is 100 MB. Will have to store csv file somewhere else, like google drive
 
 UPDATE 4:
 Finally done!I Got each review for top 50 beers for each sub-style of beer. In total, more than 19,000 pages with reviews were scraped, taking about 23246 seconds or 387 minutes to run. I had to get rid of multithreading code for each beer's subpages because of the layout of the page; only a few beer subpages are available at any one page and you need the "next" tag to go to the next one, so instead I had to use a naive for loop. 

@@ -78,7 +78,6 @@ def beer_main_helper(html_soup: BeautifulSoup, user_dict: dict) -> None:
         scrape_review_info, beer_name, user_dict)
     with concurrent.futures.ThreadPoolExecutor() as executor:
         executor.map(partial_scrape_review_info, reviews)
-    # scrape_review_info(html_soup, beer_name, user_dict)
 
 
 def beer_main(website: str, user_dict: dict, beer_url: str) -> None:
