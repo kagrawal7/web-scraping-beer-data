@@ -99,22 +99,12 @@ def beer_main(website: str, user_dict: dict, beer_url: str) -> None:
         # with concurrent.futures.ThreadPoolExecutor() as executor:
         #     executor.map(partial_beer_main_helper_caller, children)
 
-        # get next tag, call beer_main again!
-        # next_tag = children[-3]
-        # if isinstance(next_tag, Tag):
-        # test three approaches on a subset:
-        # approach one: for loop over all "next"s
-        # approach two: with redundancy, use next to recursively call
-        # beer_main
-        # approach three, for loop over all "next"s simply to get urls,
-        # then use threadpool executor
 
-
-def beer_main_helper_caller(website, user_dict, child):
-    if isinstance(child, Tag) and \
-            child.string not in ['next', 'last']:
-        beer_main_helper(BeautifulSoup(
-            s.get(website + child['href']).content, 'html.parser'), user_dict)
+# def beer_main_helper_caller(website, user_dict, child):
+#     if isinstance(child, Tag) and \
+#             child.string not in ['next', 'last']:
+#         beer_main_helper(BeautifulSoup(
+#             s.get(website + child['href']).content, 'html.parser'), user_dict)
 
 
 def substyle_main_helper(website: str, user_dict: dict, style_soup: BeautifulSoup) -> None:
@@ -125,10 +115,9 @@ def substyle_main_helper(website: str, user_dict: dict, style_soup: BeautifulSou
     #     beer_tag = td_tag.find('a')
     #     if beer_tag is not None:
     #         beer_main(website, user_dict, website + beer_tag['href'])
-    temp = [list(td_tags)[0]]
     partial_beer_main_caller = functools.partial(beer_main_caller, website, user_dict)
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor.map(partial_beer_main_caller, temp)
+        executor.map(partial_beer_main_caller, td_tags)
 
 
 def beer_main_caller(website, user_dict, td_tag):
@@ -170,15 +159,13 @@ if __name__ == '__main__':
         beer_styles_link = "https://www.beeradvocate.com/beer/styles/"
         styles_soup = BeautifulSoup(s.get(beer_styles_link).content, 'html.parser')
         style_tags = styles_soup.find_all('div', {'class': 'stylebreak'})
-        style_tags_temp = [list(style_tags)[0]]
-        for style_tag in style_tags_temp:
+        for style_tag in style_tags:
             a_tags = style_tag.find_all('a')
-            temp = [list(a_tags)[0]]
             # run main function for each sub-style
             partial_substyle_main = functools.partial(
                 substyle_main, site, data_set)
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                executor.map(partial_substyle_main, temp)
+                executor.map(partial_substyle_main, a_tags)
 
         df = pd.DataFrame(data_set).transpose()
         df.to_csv("/Users/macbook/Desktop/Kush_Independent_Projects/"
